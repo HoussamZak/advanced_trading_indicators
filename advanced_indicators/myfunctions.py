@@ -74,6 +74,8 @@ def implement_disp_strat(prices, disp):
             disp_signal.append(0)
 
 def disparity_idx_indc(data):
+        lookback = 14
+        data['disp_14'] = disp_idx(data['close'], lookback)
         buy_price, sell_price, _ = implement_disp_strat(data['close'], data['disp_14'])
         return buy_price, sell_price,data 
     
