@@ -42,7 +42,9 @@ def disp_idx(data, lookback):
     ma = data.rolling(lookback).mean()
     return ((data - ma)/ma) * 100
 
-def implement_disp_strat(prices, disp):
+def implement_disp_strat(data):
+    prices = data['close']
+    disp = disp_idx(data,14)
     buy_price = []
     sell_price = []
     disp_signal = []
@@ -72,10 +74,14 @@ def implement_disp_strat(prices, disp):
             buy_price.append(np.nan)
             sell_price.append(np.nan)
             disp_signal.append(0)
-
-def disparity_idx_indc(data):
-        lookback = 14
-        data['disp_14'] = disp_idx(data['close'], lookback)
-        buy_price, sell_price, _ = implement_disp_strat(data['close'], data['disp_14'])
-        return buy_price, sell_price,data 
+    data['buy_price'] = buy_price
+    data['sell_price'] = sell_price
+    data['signals'] = signal
+    return data 
+# def disparity_idx_indc(data):
+#         lookback = 14
+#         data['disp_14'] = disp_idx(data['close'], lookback)
+#         data.dropna(inplace = True)
+#         buy_price, sell_price, _ = implement_disp_strat(data['close'], data['disp_14'])
+#         return buy_price, sell_price,data 
     
