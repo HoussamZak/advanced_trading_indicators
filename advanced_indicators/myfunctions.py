@@ -37,3 +37,43 @@ def chopp_idx_signals(data):
 
 
 #------------------------- Disparity Index -------------------------
+
+def disp_idx(data, lookback):
+    ma = data.rolling(lookback).mean()
+    return ((data - ma)/ma) * 100
+
+def implement_disp_strat(prices, disp):
+    buy_price = []
+    sell_price = []
+    disp_signal = []
+    signal = 0
+    for i in range(len(prices)):
+        if disp[i - 4] < 0 and disp[i - 3] < 0 and disp[i - 2] < 0 and disp[i - 1] < 0 and disp[i] > 0 :
+            if signal != 1:
+                buy_price.append(prices[i])
+                sell_price.append(np.nan)
+                signal = 1 
+                disp_signal.append(signal)
+            else:
+                buy_price.append(np.nan)
+                sell_price.append(np.nan)
+                disp_signal.append(0)
+        elif disp[i-4] > 0 and disp[i-3]>0 and disp[i-2]>0 and disp[i-1]>0 and disp[i] < 0:
+            if signal != -1:
+                buy_price.append(np.nan)
+                sell_price.append(prices[i])
+                signal = -1
+                disp_signal.append(signal)
+            else:
+                buy_price.append(np.nan)
+                sell_price.append(np.nan)
+                disp_signal.append(0)
+        else:
+            buy_price.append(np.nan)
+            sell_price.append(np.nan)
+            disp_signal.append(0)
+
+def disparity_idx_indc(data):
+        buy_price, sell_price, _ = implement_disp_strat(data['close'], data['disp_14'])
+        return buy_price, sell_price,data 
+    
