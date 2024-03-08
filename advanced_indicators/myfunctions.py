@@ -38,50 +38,53 @@ def chopp_idx_signals(data):
 
 #------------------------- Disparity Index -------------------------
 
-def disp_idx(data, lookback):
-    ma = data.rolling(lookback).mean()
-    return ((data - ma)/ma) * 100
+# def disp_idx(data, lookback):
+#     ma = data.rolling(lookback).mean()
+#     return ((data - ma)/ma) * 100
 
-def implement_disp_strat(data):
-    prices = data['close']
-    disp = disp_idx(data,14)
-    buy_price = []
-    sell_price = []
-    disp_signal = []
-    signal = 0
-    for i in range(len(prices)):
-        if disp[i - 4] < 0 and disp[i - 3] < 0 and disp[i - 2] < 0 and disp[i - 1] < 0 and disp[i] > 0 :
-            if signal != 1:
-                buy_price.append(prices[i])
-                sell_price.append(np.nan)
-                signal = 1 
-                disp_signal.append(signal)
-            else:
-                buy_price.append(np.nan)
-                sell_price.append(np.nan)
-                disp_signal.append(0)
-        elif disp[i-4] > 0 and disp[i-3]>0 and disp[i-2]>0 and disp[i-1]>0 and disp[i] < 0:
-            if signal != -1:
-                buy_price.append(np.nan)
-                sell_price.append(prices[i])
-                signal = -1
-                disp_signal.append(signal)
-            else:
-                buy_price.append(np.nan)
-                sell_price.append(np.nan)
-                disp_signal.append(0)
-        else:
-            buy_price.append(np.nan)
-            sell_price.append(np.nan)
-            disp_signal.append(0)
-    data['buy_price'] = buy_price
-    data['sell_price'] = sell_price
-    data['signals'] = signal
-    return data 
-# def disparity_idx_indc(data):
-#         lookback = 14
-#         data['disp_14'] = disp_idx(data['close'], lookback)
-#         data.dropna(inplace = True)
-#         buy_price, sell_price, _ = implement_disp_strat(data['close'], data['disp_14'])
-#         return buy_price, sell_price,data 
+# def implement_disp_strat(data):
+#     prices = data['close']
+#     disp = disp_idx(data,14)
+#     #--
+#     data.dropna(inplace = True)
+#     #-- lists to append info
+#     buy_price = []
+#     sell_price = []
+#     disp_signal = []
+#     signal = 0
+#     for i in range(len(prices)):
+#         if disp[i - 4] < 0 and disp[i - 3] < 0 and disp[i - 2] < 0 and disp[i - 1] < 0 and disp[i] > 0 :
+#             if signal != 1:
+#                 buy_price.append(prices[i])
+#                 sell_price.append(np.nan)
+#                 signal = 1 
+#                 disp_signal.append(signal)
+#             else:
+#                 buy_price.append(np.nan)
+#                 sell_price.append(np.nan)
+#                 disp_signal.append(0)
+#         elif disp[i-4] > 0 and disp[i-3]>0 and disp[i-2]>0 and disp[i-1]>0 and disp[i] < 0:
+#             if signal != -1:
+#                 buy_price.append(np.nan)
+#                 sell_price.append(prices[i])
+#                 signal = -1
+#                 disp_signal.append(signal)
+#             else:
+#                 buy_price.append(np.nan)
+#                 sell_price.append(np.nan)
+#                 disp_signal.append(0)
+#         else:
+#             buy_price.append(np.nan)
+#             sell_price.append(np.nan)
+#             disp_signal.append(0)
+#     data['buy_price'] = buy_price
+#     data['sell_price'] = sell_price
+#     data['signals'] = signal
+#     return data 
+# # def disparity_idx_indc(data):
+# #         lookback = 14
+# #         data['disp_14'] = disp_idx(data['close'], lookback)
+# #         data.dropna(inplace = True)
+# #         buy_price, sell_price, _ = implement_disp_strat(data['close'], data['disp_14'])
+# #         return buy_price, sell_price,data 
     
