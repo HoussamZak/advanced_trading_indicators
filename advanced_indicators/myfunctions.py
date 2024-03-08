@@ -88,3 +88,24 @@ def chopp_idx_signals(data):
 # #         buy_price, sell_price, _ = implement_disp_strat(data['close'], data['disp_14'])
 # #         return buy_price, sell_price,data 
     
+#------------------------- Trend Exhaustion -------------------------
+def time_abovebelow_mean(data, lookback, buy_thrshld, sell_thrshld):
+    #-- moving average
+    movavg =data['close'].rolling(window = lookback).mean()
+    #-- time spent above mean
+    above_M = np.where(data['close'] > movavg, 1, 0)
+    for i in range(1, len(above_M)):
+        if above_M[i] == 1:
+            above_M[i] += above_M[i-1]
+    
+    #-- time spent below mean
+    below_M = np.where(data['close'] <  movavg, -1, 0)
+    for i in range(1, len(above_M)):
+        if below_M[i] == -1:
+            below_M[i] += below_M[i + 1]
+    
+    #-- generatingsignals
+    signals = pd.Series(0, index = data.index)
+    signals[below_M <= sell_thrshld] = 1 #-- buy long signal
+    signals[above_M >= buy_thrshld] = -1 #-- sell short signal
+
