@@ -1,6 +1,6 @@
 import numpy as np 
-import pandas as pdf
-
+import pandas as pd
+import matplotlib.pyplot as plt
 
 #------------------------- Choppiness Index -------------------------
 
@@ -18,6 +18,8 @@ def calc_true_range(data):
 #-- 14 is common window chosen in ATR calculation
 
 def chopp_idx_signals(data):
+    #-- all column names lowercase
+    data.columns = map(str.lower, data.columns)
     window_size = 14
     #-- Calculate ATR, highest high, lowest low & choppiness index
     data['true_range'] = calc_true_range(data)
@@ -38,58 +40,15 @@ def chopp_idx_signals(data):
 
 #------------------------- Disparity Index -------------------------
 
-# def disp_idx(data, lookback):
-#     ma = data.rolling(lookback).mean()
-#     return ((data - ma)/ma) * 100
-
-# def implement_disp_strat(data):
-#     prices = data['close']
-#     disp = disp_idx(data,14)
-#     #--
-#     data.dropna(inplace = True)
-#     #-- lists to append info
-#     buy_price = []
-#     sell_price = []
-#     disp_signal = []
-#     signal = 0
-#     for i in range(len(prices)):
-#         if disp[i - 4] < 0 and disp[i - 3] < 0 and disp[i - 2] < 0 and disp[i - 1] < 0 and disp[i] > 0 :
-#             if signal != 1:
-#                 buy_price.append(prices[i])
-#                 sell_price.append(np.nan)
-#                 signal = 1 
-#                 disp_signal.append(signal)
-#             else:
-#                 buy_price.append(np.nan)
-#                 sell_price.append(np.nan)
-#                 disp_signal.append(0)
-#         elif disp[i-4] > 0 and disp[i-3]>0 and disp[i-2]>0 and disp[i-1]>0 and disp[i] < 0:
-#             if signal != -1:
-#                 buy_price.append(np.nan)
-#                 sell_price.append(prices[i])
-#                 signal = -1
-#                 disp_signal.append(signal)
-#             else:
-#                 buy_price.append(np.nan)
-#                 sell_price.append(np.nan)
-#                 disp_signal.append(0)
-#         else:
-#             buy_price.append(np.nan)
-#             sell_price.append(np.nan)
-#             disp_signal.append(0)
-#     data['buy_price'] = buy_price
-#     data['sell_price'] = sell_price
-#     data['signals'] = signal
-#     return data 
-# # def disparity_idx_indc(data):
-# #         lookback = 14
-# #         data['disp_14'] = disp_idx(data['close'], lookback)
-# #         data.dropna(inplace = True)
-# #         buy_price, sell_price, _ = implement_disp_strat(data['close'], data['disp_14'])
-# #         return buy_price, sell_price,data 
     
 #------------------------- Trend Exhaustion -------------------------
-def time_abovebelow_mean(data, lookback, buy_thrshld, sell_thrshld):
+
+def trend_exhaustion(data):
+    #-- ensuring that all column names lowercase
+    data.columns = map(str.lower, data.columns)
+    lookback = 21
+    buy_thrshld = 15
+    sell_thrshld = -20
     #-- moving average
     movavg =data['close'].rolling(window = lookback).mean()
     #-- time spent above mean
@@ -100,12 +59,132 @@ def time_abovebelow_mean(data, lookback, buy_thrshld, sell_thrshld):
     
     #-- time spent below mean
     below_M = np.where(data['close'] <  movavg, -1, 0)
-    for i in range(1, len(above_M)):
+    for i in range(1, len(below_M)):
         if below_M[i] == -1:
-            below_M[i] += below_M[i + 1]
+            below_M[i] += below_M[i - 1]
     
     #-- generatingsignals
     signals = pd.Series(0, index = data.index)
     signals[below_M <= sell_thrshld] = 1 #-- buy long signal
     signals[above_M >= buy_thrshld] = -1 #-- sell short signal
+    return pd.DataFrame({
+        'close' : data['close'],
+        'mov_avg' : movavg,
+        'above_mean' : pd.Series(above_M, index = data.index),
+        'below_mean' : pd.Series(below_M, index = data.index),
+        'signal': signals
+    })
+#-- Plotting with trendExhaustion 
+
+def plot_stock_with_trendExhaustion(data):
+    #-- ensuring that all column names lowercase
+    data.columns = map(str.lower, data.columns)
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(15, 8), sharex=True)
+    ax1.plot(data['close'], label='Close Price', color='blue')
+    ax1.plot(data['mov_avg'], label='Moving Average', color='red')
+    ax1.scatter(data.index, data['close'].where(data['signal']==1), color='green', marker='^', alpha=1, s =100)
+    ax1.scatter(data.index, data['close'].where(data['signal']==-1), color='red', marker='v', alpha=1, s = 100)
+    ax1.legend(loc='upper left')
+    ax1.set_ylabel('Price')
+    ax1.grid(True)
+
+    ax2.plot(data['above_mean'], label='Time Spent Above Mean', color='green')
+    ax2.plot(data['below_mean'], label='Time Spent Below Mean', color='red')
+    ax2.legend(loc='upper left')
+    ax2.set_xlabel('Date')
+    ax2.set_ylabel('Time Spent')
+    ax2.grid(True)
+
+    plt.title('Time Spent Above or Below Mean,  Signals')
+    plt.tight_layout()
+    plt.show()
+
+#------------------------- Relative Vigor Index -----------------------
+    
+def rvi_signals(data, period = 10):
+    #-- ensuring that all column names lowercase
+    data.columns = map(str.lower, data.columns)
+
+    numerator = data['close'] - data['open']
+    denominator = data['high'] - data['low']
+    data['rvi'] = (numerator.rolling(window = period).mean() /
+                   denominator.rolling(window = period).mean())
+    data['rvi_signal'] = data['rvi'].rolling(window = period).mean()
+    data['buy_long'] = ((data['rvi'] > data['rvi_signal']) & (data['rvi'].shift(1) <= data['rvi_signal'].shift(1)))
+    data['sell_short'] = ((data['rvi'] < data['rvi_signal']) & (data['rvi'].shift(1) >= data['rvi_signal'].shift(1)))
+    return data 
+
+def plot_stock_with_rvi(data):
+    #-- ensuring that all column names lowercase
+    data.columns = map(str.lower, data.columns)
+    # Plotting
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(25, 10), gridspec_kw={'height_ratios': [2, 1]})
+    # Stock price plot with buy and sell signals
+    ax1.plot(data['close'], label='Close Price', color='blue')
+    ax1.scatter(data.index[data['buy_long']], data['close'][data['buy_long']], label='Buy Signal', marker='^', color='green', alpha=1)
+    ax1.scatter(data.index[data['sell_short']], data['close'][data['sell_short']], label='Sell Signal', marker='v', color='red', alpha=1)
+    ax1.set_title('Relative Vigor Index, Stock Price ')
+    ax1.set_ylabel('Price')
+    ax1.legend()
+
+    # RVI plot with buy and sell signals
+    ax2.plot(data['rvi'], label='RVI', color='green')
+    ax2.plot(data['rvi_signal'], label='Signal Line', color='red', linestyle='--')
+    ax2.scatter(data.index[data['buy_long']], data['rvi'][data['buy_long']], label='Buy Signal', marker='^', color='blue', alpha=1)
+    ax2.scatter(data.index[data['sell_short']], data['rvi'][data['sell_short']], label='Sell Signal', marker='v', color='orange', alpha=1)
+    ax2.set_title('Relative Vigor Index (RVI) with Signals')
+    ax2.set_ylabel('RVI')
+    ax2.legend()
+
+    plt.tight_layout()
+    plt.show()
+
+#------------------------- DeMarker Indicator -------------------------
+
+def demarker_indc(data):
+    #-- ensuring that all column names lowercase
+    data.columns = map(str.lower, data.columns)
+
+    period = 9
+    data['deMAX'] = 0
+    data['deMIN'] = 0
+    for i in range(1, len(data)):
+        if data['close'][i] > data['close'][i - 1]:
+            data['deMAX'][i] = data['close'][i] - data['close'][i-1]
+        elif data['close'][i] < data['close'][i - 1]:
+            data['deMIN'][i] = data['close'][i - 1] -data['close'][i]
+
+    data['deMM'] = data['deMAX'].rolling(window = period).mean()
+    data['deMN'] = data['deMIN'].rolling(window = period).mean()
+    data['deMarker'] = data['deMN'] / (data['deMM'] + data['deMN'])
+
+    #-- Buy & Sell Signals to dataframe
+    data['buy_long'] = (data['deMarker'] < 0.275) & (data['deMarker'].shift(1) >= 0.3)
+    data['sell_short'] = (data['deMarker'] > 0.725) & (data['deMarker'].shift(1) <= 0.7)
+    return data
+
+def plot_stock_with_demarker(data):
+    #-- ensuring that all column names lowercase
+    data.columns = map(str.lower, data.columns)
+    # Plotting
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(15, 8))
+    # Stock price with buy and sell signals
+    ax1.plot(data['close'], label='Close Price', alpha=0.5)
+    ax1.scatter(data.index[data['buy_long']], data['close'][data['buy_long']], label='Buy Signal', marker='^', color='green', s=100)
+    ax1.scatter(data.index[data['sell_short']], data['close'][data['sell_short']], label='Sell Signal', marker='v', color='red', s=100)
+    ax1.set_title('Price Chart with Buy and Sell Signals')
+    ax1.set_ylabel('Price')
+    ax1.legend()
+
+    # DeMarker Indicator
+    ax2.plot(data['deMarker'], label='DeMarker', color='blue')
+    ax2.axhline(0.7, color='red', linestyle='--', label='Overbought Threshold (0.725)')
+    ax2.axhline(0.3, color='green', linestyle='--', label='Oversold Threshold (0.275)')
+    ax2.set_title('DeMarker Indicator')
+    ax2.set_ylabel('DeMarker Value')
+    ax2.legend()
+
+    plt.tight_layout()
+    plt.show()
+#------------------------- Aaron Indicator -------------------------
 
