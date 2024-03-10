@@ -40,7 +40,82 @@ def chopp_idx_signals(data):
 
 #------------------------- Disparity Index -------------------------
 
+def disparity_index(data):
+    #-- ensuring that all column names lowercase
+    data.columns = map(str.lower, data.columns)
+    #-- renaming price column if price column present
+    data = data.rename(columns={'price': 'close'})
+    data = data.rename(columns={'prices': 'close'})
+    #-- default lookback value
+    lookback = 14
     
+    data['mov_avg'] = data['close'].rolling(lookback).mean()
+    data['disp'] = ((data['close'] - data['mov_avg'] )/ data['mov_avg']) * 100
+
+    buy_prices = []
+    sell_prices = []
+    disp_signal = []
+    signal = 0
+    # data.dropna(inplace = True)
+
+    for i in range(len(data['close'])):
+        if data['disp'].iloc[i - 4] < 0 and data['disp'].iloc[i - 3] < 0 and data['disp'].iloc[i - 2]<0 and data['disp'].iloc[i-1]<0 and data['disp'].iloc[i] > 0:
+            if signal != 1:
+                buy_prices.append(data['close'].iloc[i])
+                sell_prices.append(np.nan)
+                signal = 1 
+            else:
+                buy_prices.append(np.nan)
+                sell_prices.append(np.nan)
+                disp_signal.append(0)
+
+        elif data['disp'].iloc[i - 4] > 0 and data['disp'].iloc[i - 3] > 0 and data['disp'].iloc[i - 2]>0 and data['disp'].iloc[i-1]>0 and data['disp'].iloc[i] < 0:
+            if signal != -1:
+                buy_prices.append(np.nan)
+                sell_prices.append(data['close'].iloc[i])
+                signal = -1
+                disp_signal.append(signal)
+            else:
+                buy_prices.append(np.nan)
+                sell_prices.append(np.nan)
+                disp_signal.append(0)
+        else:
+            buy_prices.append(np.nan)
+            sell_prices.append(np.nan)
+            disp_signal.append(0)
+    #-- appending generated signals series to dataframe 
+    # data['signal'] = disp_signal
+    # data['buy_price'] =  buy_prices
+    # data['sell_price'] = sell_prices
+    return data , disp_signal, buy_prices, sell_prices
+
+#-- deploying trading/strategy logic and plotting
+def disparity_strategy_and_plot(data):
+
+    # buy_prices, sell_prices, _ = disparity_index(data['close'])
+
+    # Plotting the buy and sell signals along with DI
+    fig, ax = plt.subplots(2, 1, figsize=(15, 8), gridspec_kw={'height_ratios': [2, 1]})
+    
+    # Plotting the stock price and signals
+    ax[0].plot(data['close'], label='Close Price', alpha=0.5)
+    ax[0].scatter(data.index, data['buy_price'], label='Buy Signal', marker='^', color='green', s=100)
+    ax[0].scatter(data.index, data['sell_price'], label='Sell Signal', marker='v', color='red', s=100)
+    ax[0].set_title(' - Buy & Sell Signals')
+    ax[0].set_ylabel('Price')
+    ax[0].legend()
+
+    # Plotting the Disparity Index with bars
+    ax[1].bar(data.index, data['disp'], color=np.where(data['disp'] >= 0, '#26a69a', '#ef5350'))
+    ax[1].axhline(0, color='gray', linestyle='--')  # Add a line at zero
+    ax[1].set_title(' - 14-Period Disparity Index')
+    ax[1].set_xlabel('Date')
+    ax[1].set_ylabel('Disparity Index (%)')
+
+    plt.tight_layout()
+    plt.show()
+
+
 #------------------------- Trend Exhaustion -------------------------
 
 def trend_exhaustion(data):
@@ -163,7 +238,7 @@ def demarker_indc(data):
     data['sell_short'] = (data['deMarker'] > 0.725) & (data['deMarker'].shift(1) <= 0.7)
     return data
 
-def plot_stock_with_demarker(data):
+def plot_with_demarker(data):
     #-- ensuring that all column names lowercase
     data.columns = map(str.lower, data.columns)
     # Plotting
@@ -186,5 +261,46 @@ def plot_stock_with_demarker(data):
 
     plt.tight_layout()
     plt.show()
-#------------------------- Aaron Indicator -------------------------
 
+
+#------------------------- Aaron Indicator -------------------------
+    
+def aaron_indicator(data):
+    #-- ensuring that all column names lowercase
+    data.columns = map(str.lower, data.columns)
+
+    period = 25
+    aaron_up = 100 * (data['high'].rollling(period + 1).apply(np.argmax, raw = True) / period)
+    aaron_down = 100 * (data['low'].rolling(period + 1).apply(np.argmin, raw = True) / period)
+    # aaron_oscillator = aaron_up - aaron_down 
+    data['aaron_osc'] = aaron_up - aaron_down 
+
+    #-- Buy & Sell Signals to dataframe
+    data['buy_long'] = (data['aaron_osc'] > 0) & (data['aaron_osc'].shift(1) <= 0)
+    data['sell_short'] = (data['aaron_osc'] < 0) & (data['aaron_osc'].shift(1) >= 0)
+
+
+def plot_with_aroon_indicator(data):
+    fig, (ax1, ax2) = plt.subplots(2, figsize=(15, 8), sharex=True)
+    
+    ax1.plot(data.index, data['close'], label='Close Price', color='blue')
+    ax1.plot(data.index['buy_long'], data.loc['buy_long']['close'], '^', markersize=10, color='g', label='Buy Signal')
+    ax1.plot(data.index['sell_short'], data.loc['sell_short']['close'], 'v', markersize=10, color='r', label='Sell Signal')
+    ax1.set_ylabel("Close Price")
+    ax1.legend()
+    
+    ax2.plot(data.index, label='Aroon Oscillator', color='purple')
+    ax2.axhline(0, linestyle='--', color='black')
+    ax2.set_xlabel("Date")
+    ax2.set_ylabel("Aroon Oscillator")
+    ax2.legend()
+    
+    for signal_date in data.index['buy_long']:
+        ax1.axvline(signal_date, color='g', linestyle='--', alpha=0.5)
+        ax2.axvline(signal_date, color='g', linestyle='--', alpha=0.5)
+    
+    for signal_date in data.index['sell_short']:
+        ax1.axvline(signal_date, color='r', linestyle='--', alpha=0.5)
+        ax2.axvline(signal_date, color='r', linestyle='--', alpha=0.5)
+    
+    plt.show()
