@@ -87,12 +87,12 @@ def disparity_index(data):
     # data['signal'] = disp_signal
     # data['buy_price'] =  buy_prices
     # data['sell_price'] = sell_prices
-    return data , disp_signal, buy_prices, sell_prices
+    return data , buy_prices, sell_prices
 
 #-- deploying trading/strategy logic and plotting
 def disparity_strategy_and_plot(data):
 
-    # buy_prices, sell_prices, _ = disparity_index(data['close'])
+    data, buy_prices, sell_prices,  = disparity_index(data)
 
     # Plotting the buy and sell signals along with DI
     fig, ax = plt.subplots(2, 1, figsize=(15, 8), gridspec_kw={'height_ratios': [2, 1]})
