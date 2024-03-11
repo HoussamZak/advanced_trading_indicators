@@ -1,7 +1,9 @@
+LICENSE.txt
 README.md
 setup.py
 advanced_trdng_indicators.egg-info/PKG-INFO
 advanced_trdng_indicators.egg-info/SOURCES.txt
 advanced_trdng_indicators.egg-info/dependency_links.txt
+advanced_trdng_indicators.egg-info/requires.txt
 advanced_trdng_indicators.egg-info/top_level.txt
 test/test_myfunction.py

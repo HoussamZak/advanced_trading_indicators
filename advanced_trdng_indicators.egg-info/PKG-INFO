@@ -4,3 +4,4 @@ Version: 0.1.0
 Summary: Advanced Trading Indicators
 Author: Houssam Zak
 Requires-Python: >=3.8
+License-File: LICENSE.txt

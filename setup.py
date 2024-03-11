@@ -1,4 +1,4 @@
-from setuptools import find_packages, setup 
+from setuptools import find_packages, setup  
 setup(
     name = 'advanced_trdng_indicators',
     packages = find_packages(include=['advanced_trdng_indicators']),
