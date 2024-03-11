@@ -8,10 +8,10 @@ setup(
     setup_requires = ['pytest-runner'],
     tests_require = ['pytest==4.4.1'],
     test_suite = 'tests',
-    python_requires='>=3.8'
+    python_requires='>=3.8',
     install_requires=[
         'numpy',
         'pandas',
         'matplotlib',
-    ],
+    ]
 )
