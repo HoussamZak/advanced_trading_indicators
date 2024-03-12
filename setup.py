@@ -1,17 +1,20 @@
-from setuptools import find_packages, setup  
+from setuptools import setup, find_packages
 setup(
-    name = 'advanced_trdng_indicators',
-    packages = find_packages(include=['advanced_trdng_indicators']),
-    version = '0.1.0',
-    description = 'Advanced Trading Indicators',
-    author = 'Houssam Zak',
-    setup_requires = ['pytest-runner'],
-    tests_require = ['pytest==4.4.1'],
-    test_suite = 'tests',
-    python_requires='>=3.8',
-    install_requires=[
-        'numpy',
-        'pandas',
-        'matplotlib',
-    ]
+name='advTradingIndicators',
+version='0.1.0',
+author='Houssam Zak',
+author_email='houssamzak@gmail.com',
+description='Not your usual trading indicators, use with in combination with other indicator, this is not financial advice.',
+packages=find_packages(),
+classifiers=[
+'Programming Language :: Python :: 3',
+'License :: OSI Approved :: MIT License',
+'Operating System :: OS Independent',
+],
+install_requires=[
+          'numpy',
+          'pandas',
+          'matplotlib',
+      ],
+python_requires='>=3.8',
 )
